@@ -10,6 +10,5 @@ pytest = "*"
 python-dotenv = "*"
 pytest-html = "*"
 pytest-check = "*"
-
 [requires]
 python_version = "3.11"

@@ -34,6 +34,7 @@ def test_policies(iam_client):
         policy_settings["Resource"] = (
             "All" if policy_settings["Resource"] == "*" else policy_settings["Resource"]
         )
+
         check.is_in(
             policy["PolicyName"],
             cxqa_iam_01_exp_data,
