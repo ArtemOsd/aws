@@ -30,12 +30,20 @@ def test_policies(iam_client):
         policy_settings["Resource"] = (
             "All" if policy_settings["Resource"] == "*" else policy_settings["Resource"]
         )
-        assert policy["PolicyName"] in cxqa_iam_01_exp_data
+        assert (
+            policy["PolicyName"] in cxqa_iam_01_exp_data
+        ), f'{policy["PolicyName"]} is not in expected data'
         expected_data = cxqa_iam_01_exp_data[policy["PolicyName"]]
         expected_data["Actions Allowed"].sort()
         if isinstance(policy_settings["Action"], str):
             policy_settings["Action"] = [policy_settings["Action"]]
         policy_settings["Action"].sort()
-        assert expected_data["Actions Allowed"] == policy_settings["Action"]
-        assert policy_settings["Resource"] == expected_data["Resources"]
-        assert policy_settings["Effect"] == expected_data["Effect"]
+        assert (
+            expected_data["Actions Allowed"] == policy_settings["Action"]
+        ), f'Wrong actions allowed for {policy["PolicyName"]}'
+        assert (
+            policy_settings["Resource"] == expected_data["Resources"]
+        ), f'Wrong added resources for {policy["PolicyName"]}'
+        assert (
+            policy_settings["Effect"] == expected_data["Effect"]
+        ), f'Wrong action of policy for {policy["PolicyName"]}'

@@ -8,5 +8,6 @@ black = "*"
 boto3 = "*"
 pytest = "*"
 python-dotenv = "*"
+pytest-html = "*"
 [requires]
 python_version = "3.11"
