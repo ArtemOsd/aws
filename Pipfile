@@ -1,0 +1,14 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+black = "*"
+boto3 = "*"
+pytest = "*"
+python-dotenv = "*"
+pytest-html = "*"
+pytest-check = "*"
+[requires]
+python_version = "3.11"
