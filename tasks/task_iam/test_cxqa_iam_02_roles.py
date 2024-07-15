@@ -25,12 +25,11 @@ def test_roles(iam_client):
                 cxqa_iam_02_exp_data,
                 f'{role["RoleName"]} is not in expected data',
             )
-            response_role = iam_client.list_attached_role_policies(
-                RoleName=role["RoleName"]
-            )
-            attached_policy_name = response_role["AttachedPolicies"][0]["PolicyName"]
-            check.equal(
-                attached_policy_name,
-                cxqa_iam_02_exp_data[role["RoleName"]]["Policies"],
-                f'Wrong policy attached to role {role["RoleName"]}',
+            response_role = iam_client.list_role_policies(RoleName=role["RoleName"])
+            policy_names = response_role["PolicyNames"]
+            expected_policy = cxqa_iam_02_exp_data[role["RoleName"]]["Policies"]
+            check.is_in(
+                expected_policy,
+                policy_names,
+                f'Policy is not added to {role["RoleName"]} role',
             )
