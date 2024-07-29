@@ -10,5 +10,9 @@ pytest = "*"
 python-dotenv = "*"
 pytest-html = "*"
 pytest-check = "*"
+paramiko = "*"
+requests = "*"
+sshtunnel = "*"
+
 [requires]
 python_version = "3.11"
