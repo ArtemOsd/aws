@@ -70,7 +70,7 @@ def forward_80_port_via_ssh(instances, get_certificate):
     server = SSHTunnelForwarder(
         (public_instance_ip, public_inst_port),
         ssh_username=remote_user,
-        ssh_private_key=cert_path,
+        ssh_pkey=cert_path,
         remote_bind_address=(private_instance_ip, private_inst_port),
         local_bind_address=(local_host, local_port),
     )
