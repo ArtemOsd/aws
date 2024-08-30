@@ -5,7 +5,7 @@ parent_folder = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 )
 sys.path.insert(0, parent_folder)
-from tasks.task_vpc.conftest import (
+from tasks.task4_vpc.conftest import (
     check_internet_gateway_access,
     check_instance_access,
     check_nat_gateway_access,

@@ -13,6 +13,7 @@ pytest-check = "*"
 paramiko = "*"
 requests = "*"
 sshtunnel = "*"
+jsonschema = "*"
 
 [requires]
 python_version = "3.11"
