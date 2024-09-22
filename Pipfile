@@ -16,6 +16,10 @@ sshtunnel = "*"
 jsonschema = "*"
 pymysql = "*"
 pytz = "*"
-
+google-auth-oauthlib = "*"
+google-auth-httplib2 = "*"
+google-api-python-client="*"
+playwright="*"
+pytest-playwright="*"
 [requires]
 python_version = "3.11"

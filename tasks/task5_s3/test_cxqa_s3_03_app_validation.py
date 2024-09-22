@@ -32,12 +32,12 @@ def test_upload_images_to_s3_with_boto(ec2_client, s3_client):
     assert is_uploaded
 
 
-def test_upload_images_to_s3_with_http(base_url, base_headers):
+def test_upload_images_to_s3_with_http(_base_url, base_headers):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(script_dir, "resources", "test.jpg")
     with open(file_path, "rb") as file:
         files = {"upfile": file}
-        response = requests.post(base_url, headers=base_headers, files=files)
+        response = requests.post(_base_url, headers=base_headers, files=files)
         check.is_true(response.status_code == 200)
         check.is_true(response.headers["content-type"] == "application/json")
         check.is_true("id" in response.json())
@@ -55,10 +55,10 @@ def test_download_images_to_s3(ec2_client, s3_client):
     os.unlink(file_path)
 
 
-def test_download_images_to_s3_via_http(base_url, base_headers):
-    response = requests.get(base_url, headers=base_headers)
+def test_download_images_to_s3_via_http(_base_url, base_headers):
+    response = requests.get(_base_url, headers=base_headers)
     _id = response.json()[0]["id"]
-    url = base_url + "/file/" + str(_id)
+    url = _base_url + "/file/" + str(_id)
     header = {"Accept": "image/png"}
     response = requests.get(url, headers=header)
     assert "filename" in response.headers["content-disposition"]
@@ -71,8 +71,8 @@ def test_view_list_uploaded_to_s3(ec2_client, s3_client):
     list_files_in_bucket(bucket_name, "")
 
 
-def test_view_list_to_s3_via_http(base_url, base_headers):
-    response = requests.get(base_url, headers=base_headers)
+def test_view_list_to_s3_via_http(_base_url, base_headers):
+    response = requests.get(_base_url, headers=base_headers)
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
     for item in response.json():
@@ -91,10 +91,10 @@ def test_delete_file(ec2_client, s3_client, upload_test_file_to_bucket):
     assert object_name not in files
 
 
-def test_delete_file_via_http(base_url, base_headers):
-    response = requests.get(base_url, headers=base_headers)
+def test_delete_file_via_http(_base_url, base_headers):
+    response = requests.get(_base_url, headers=base_headers)
     _id = response.json()[0]["id"]
-    url = base_url + "/" + str(_id)
+    url = _base_url + "/" + str(_id)
     response = requests.delete(url, headers=base_headers)
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
