@@ -40,11 +40,6 @@ def s3_client(aws_session):
     return aws_session.client("s3")
 
 
-@pytest.fixture(scope="module")
-def ec2(aws_session):
-    return aws_session.resource("ec2")
-
-
 @pytest.fixture
 def instances(ec2_client):
     instances_data = {"public": None, "private": None}
@@ -76,7 +71,7 @@ def get_instance(ec2_client):
 
 
 @pytest.fixture
-def base_url(get_instance):
+def _base_url(get_instance):
     instance_address = get_instance["PublicIpAddress"]
     return f"http://{instance_address}/api/image"
 
@@ -86,52 +81,6 @@ def base_headers():
     return {"Accept": "application/json"}
 
 
-@pytest.fixture()
-def forward_80_port_via_ssh(instances, get_certificate):
-    cert_path = get_certificate
-    remote_user = "ec2-user"
-    local_host = "127.0.0.1"
-    local_port = 10022
-    public_inst_port = 22
-    private_inst_port = 80
-    private_instance_ip = instances["private"]["PrivateIpAddress"]
-    public_instance_ip = instances["public"]["PublicIpAddress"]
-    from sshtunnel import SSHTunnelForwarder
-
-    server = SSHTunnelForwarder(
-        (public_instance_ip, public_inst_port),
-        ssh_username=remote_user,
-        ssh_pkey=cert_path,
-        remote_bind_address=(private_instance_ip, private_inst_port),
-        local_bind_address=(local_host, local_port),
-    )
-    logging.info("server connected")
-    server.start()
-    yield local_host, local_port
-    server.stop()
-
-
-@pytest.fixture()
-def get_certificate(aws_session):
-    cert_path = "cert.pem"
-    ssm = aws_session.client("ssm")
-    parameter_name_with_key = None
-    response = ssm.describe_parameters()
-    for parameter in response["Parameters"]:
-        if "/ec2/keypair/key-" in parameter["Name"]:
-            parameter_name_with_key = parameter["Name"]
-    response = ssm.get_parameter(Name=parameter_name_with_key, WithDecryption=True)
-    parameter_value = response["Parameter"]["Value"].replace("\r\n", "\n")
-    with open(cert_path, "w", encoding="utf-8") as f:
-        f.write(parameter_value)
-    yield cert_path
-    import os
-
-    if os.path.exists(cert_path):
-        os.remove(cert_path)
-
-
-# TODO split logic into small peaces
 def check_application_accessibility(ec2, instance_id):
     # Get instance information
     instance_info = ec2.describe_instances(InstanceIds=[instance_id])
@@ -189,47 +138,6 @@ def check_application_accessibility(ec2, instance_id):
         )
 
     return True, "Application is accessible via HTTP from the internet."
-
-
-# TODO split logic into small peaces
-def check_ssh_access(ec2, instance_id):
-    # Get instance details
-    instance_details = ec2.describe_instances(InstanceIds=[instance_id])
-    instance = instance_details["Reservations"][0]["Instances"][0]
-
-    # Check if the instance has a public IP address
-    if "PublicIpAddress" not in instance:
-        return False, "Instance does not have a public IP address."
-
-    # Check if the instance is associated with a key pair
-    if "KeyName" not in instance:
-        return False, "Instance is not associated with any key pair for SSH access."
-
-    # Get the security group IDs
-    security_group_ids = [sg["GroupId"] for sg in instance["SecurityGroups"]]
-
-    # Describe security groups and check for SSH access
-    security_groups = ec2.describe_security_groups(GroupIds=security_group_ids)
-    ssh_access = False
-    for sg in security_groups["SecurityGroups"]:
-        for permission in sg["IpPermissions"]:
-            # Check for inbound rules allowing SSH (port 22)
-            if permission["FromPort"] <= 22 <= permission["ToPort"]:
-                for ip_range in permission["IpRanges"]:
-                    if (
-                        ip_range["CidrIp"] == "0.0.0.0/0"
-                    ):  # This allows SSH from any IP, consider restricting it
-                        ssh_access = True
-                        break
-            if ssh_access:
-                break
-        if ssh_access:
-            break
-
-    if not ssh_access:
-        return False, "Security groups do not allow SSH access."
-
-    return True, "Instance is accessible via SSH."
 
 
 def get_all_buckets(s3):

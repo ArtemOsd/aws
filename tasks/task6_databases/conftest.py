@@ -222,7 +222,7 @@ def get_database_credentials(session):
 
 
 @pytest.fixture
-def base_url(get_instance):
+def _base_url(get_instance):
     instance_address = get_instance["PublicIpAddress"]
     return f"http://{instance_address}/api/image"
 
@@ -233,12 +233,12 @@ def base_headers():
 
 
 @pytest.fixture()
-def upload_file(base_url, base_headers):
+def upload_file(_base_url, base_headers):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(script_dir, "resources", "test.jpg")
     with open(file_path, "rb") as file:
         files = {"upfile": file}
-        response = requests.post(base_url, headers=base_headers, files=files)
+        response = requests.post(_base_url, headers=base_headers, files=files)
         _id = response.json().get("id")
         uploaded_date = datetime.now(pytz.utc).strftime("%Y-%m-%d %H:%M")
     return _id, uploaded_date

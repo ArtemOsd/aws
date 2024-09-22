@@ -23,10 +23,10 @@ def test_cxqa_rds_03_metadata(upload_file, db):
             assert file_size == object_size
 
 
-def test_cxqa_rds_04_get_metadata_via_http(upload_file, db, base_headers, base_url):
+def test_cxqa_rds_04_get_metadata_via_http(upload_file, db, base_headers, _base_url):
     file_id, uploaded_date = upload_file
     table_name = get_table_name(db)
-    url = base_url + "/" + str(file_id)
+    url = _base_url + "/" + str(file_id)
     header = {"Accept": "image/*"}
     response = requests.get(url, headers=header)
     assert response.status_code == 200
@@ -43,7 +43,7 @@ def test_cxqa_rds_04_get_metadata_via_http(upload_file, db, base_headers, base_u
             assert object_size == response_data["object_size"]
 
 
-def test_cxqa_rds_05_removed_metadata(upload_file, db, base_url, base_headers):
+def test_cxqa_rds_05_removed_metadata(upload_file, db, _base_url, base_headers):
     file_id, uploaded_date = upload_file
     table_name = get_table_name(db)
     with db.cursor() as cursor:
@@ -54,9 +54,9 @@ def test_cxqa_rds_05_removed_metadata(upload_file, db, base_url, base_headers):
             assert _id
             assert "test.jpg" in object_key
 
-    response = requests.get(base_url, headers=base_headers)
+    response = requests.get(_base_url, headers=base_headers)
     _id = response.json()[0]["id"]
-    url = base_url + "/" + str(_id)
+    url = _base_url + "/" + str(_id)
     response = requests.delete(url, headers=base_headers)
     assert response.status_code == 200
     assert response.text.strip() == '"Image is deleted"'
@@ -66,7 +66,7 @@ def test_cxqa_rds_05_removed_metadata(upload_file, db, base_url, base_headers):
         assert len(data) == 0, "item is not deleted"
 
 
-def test_cxqa_rds_05_removed_metadata(upload_file, db, base_url, base_headers):
+def test_cxqa_rds_05_removed_metadata(upload_file, db, _base_url, base_headers):
     file_id, uploaded_date = upload_file
     table_name = get_table_name(db)
 
@@ -77,7 +77,7 @@ def test_cxqa_rds_05_removed_metadata(upload_file, db, base_url, base_headers):
         for _id, object_key, _, _, _ in data:
             assert _id
             assert "test.jpg" in object_key
-    url = base_url + "/" + str(_id)
+    url = _base_url + "/" + str(_id)
     response = requests.delete(url, headers=base_headers)
     assert response.status_code == 200
     assert response.text.strip() == '"Image is deleted"'
