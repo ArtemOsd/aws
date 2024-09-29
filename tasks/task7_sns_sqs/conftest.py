@@ -359,10 +359,32 @@ def browser():
         browser.close()
 
 
+@pytest.fixture()
+def read_all_mails(mail_creds, user_id="me"):
+    from googleapiclient.discovery import build
+
+    service = build("gmail", "v1", credentials=mail_creds)
+    q = "is:unread AWS sns -in:chats"
+    results = (
+        service.users()
+        .messages()
+        .list(userId=user_id, labelIds=["INBOX"], q=q)
+        .execute()
+    )
+    messages = results.get("messages", [])
+    if not messages:
+        logging.error("No messages found.")
+    else:
+        logging.info("Message snippets:")
+        for message in messages:
+            logging.info("Reading message ID:", message["id"])
+            mark_as_read(service, user_id, message["id"])
+
+
 def get_confirmation_link_from_email(mail_creds, user_id="me", is_mark_as_read=False):
     from time import sleep
 
-    sleep(3)
+    sleep(5)
     from googleapiclient.discovery import build
 
     service = build("gmail", "v1", credentials=mail_creds)
