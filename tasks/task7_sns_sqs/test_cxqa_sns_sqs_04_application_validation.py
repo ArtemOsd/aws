@@ -10,7 +10,9 @@ import requests
 from tasks.task7_sns_sqs.conftest import get_confirmation_link_from_email, list_messages
 
 
-def test_cxqa_snssqs_04_subscribe_notification(_base_url, base_headers, mail_creds):
+def test_cxqa_snssqs_04_subscribe_notification(
+    read_all_mails, _base_url, base_headers, mail_creds
+):
     email = os.getenv("EMAIL")
     url = _base_url + "/notification/" + email
     response = requests.post(url, headers=base_headers)
@@ -34,7 +36,7 @@ def test_cxqa_snssqs_05_confirm_subscription(browser, sns_client, mail_creds):
 
 
 def test_cxqa_snssqs_06_07_images_events(
-    upload_images_to_s3_with_http, delete_file_via_http, mail_creds
+    read_all_mails, upload_images_to_s3_with_http, delete_file_via_http, mail_creds
 ):
     q = "is:unread event_type: upload -in:chats"
     mail = list_messages(mail_creds, q)[0].split("\r\n")
@@ -52,7 +54,7 @@ def test_cxqa_snssqs_06_07_images_events(
 
 
 def test_cxqa_snssqs_08_images_events(
-    upload_images_to_s3_with_http, base_headers, mail_creds
+    read_all_mails, upload_images_to_s3_with_http, base_headers, mail_creds
 ):
     q = "is:unread event_type: upload -in:chats"
     mail = list_messages(mail_creds, q)[0].split("\r\n")
@@ -65,7 +67,9 @@ def test_cxqa_snssqs_08_images_events(
             assert response.status_code == 200
 
 
-def test_cxqa_snssqs_09_unsubscribe_notification(_base_url, base_headers, mail_creds):
+def test_cxqa_snssqs_09_unsubscribe_notification(
+    read_all_mails, _base_url, base_headers, mail_creds
+):
     email = os.getenv("EMAIL")
     url = _base_url + "/notification/" + email
     response = requests.delete(url, headers=base_headers)
@@ -74,7 +78,7 @@ def test_cxqa_snssqs_09_unsubscribe_notification(_base_url, base_headers, mail_c
 
 
 def test_cxqa_snssqs_10_notification_unsubscribe(
-    upload_images_to_s3_with_http, delete_file_via_http, mail_creds
+    read_all_mails, upload_images_to_s3_with_http, delete_file_via_http, mail_creds
 ):
     q = "is:unread event_type: upload -in:chats"
     mail = list_messages(mail_creds, q)
@@ -84,7 +88,9 @@ def test_cxqa_snssqs_10_notification_unsubscribe(
     assert not mail
 
 
-def test_cxqa_snssqs_11_view_all_subscriptions(_base_url, base_headers, sns_client):
+def test_cxqa_snssqs_11_view_all_subscriptions(
+    read_all_mails, _base_url, base_headers, sns_client
+):
     topic_arn = sns_client.list_topics()["Topics"][0]["TopicArn"]
     url = _base_url + "/notification"
     email = os.getenv("EMAIL")

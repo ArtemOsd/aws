@@ -1,83 +1,70 @@
 import os
+import sys
+from time import sleep
 
 import requests
+import pytest_check as check
 
-from tasks.task6_databases.conftest import get_table_name
-
-
-def test_cxqa_rds_03_metadata(upload_file, db):
-    file_id, uploaded_date = upload_file
-    table_name = get_table_name(db)
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(script_dir, "resources", "test.jpg")
-    file_size = os.path.getsize(file_path)
-    with db.cursor() as cursor:
-        cursor.execute(f"SELECT * FROM {table_name} WHERE id = '{file_id}'")
-        data = cursor.fetchall()
-        for _id, object_key, object_type, last_modified, object_size in data:
-            last_modified = last_modified.strftime("%Y-%m-%d %H:%M")
-            assert isinstance(_id, int)
-            assert last_modified == uploaded_date
-            assert "test.jpg" in object_key
-            assert "binary/octet-stream" == object_type
-            assert file_size == object_size
+parent_folder = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+)
+sys.path.insert(0, parent_folder)
+from tasks.task6_databases.conftest import (
+    get_table_name,
+    get_dynamodb_table_name,
+    dynamodb_table_data,
+)
 
 
-def test_cxqa_rds_04_get_metadata_via_http(upload_file, db, base_headers, _base_url):
-    file_id, uploaded_date = upload_file
-    table_name = get_table_name(db)
+def test_cxqa_rds_03_metadata(upload_file, dynamodb_client, dynamodb_resource):
+    file_id, uploaded_date, file_name, file_size = upload_file
+    table_data = dynamodb_table_data(dynamodb_client, dynamodb_resource)
+    for item in table_data["Items"]:
+        if item["id"] != file_id:
+            continue
+        else:
+            check.equal(item["id"], file_id)
+            check.equal(int(item["last_modified"]), uploaded_date)
+            check.is_in(file_name, item["object_key"])
+            check.equal(item["object_type"], "binary/octet-stream")
+            assert item["object_type"] == "binary/octet-stream"
+            assert item["object_size"] == file_size
+            break
+
+
+def test_cxqa_rds_04_get_metadata_via_http(
+    upload_file, dynamodb_client, dynamodb_resource, base_headers, _base_url
+):
+    file_id, uploaded_date, file_name, file_size = upload_file
     url = _base_url + "/" + str(file_id)
     header = {"Accept": "image/*"}
     response = requests.get(url, headers=header)
     assert response.status_code == 200
     response_data = response.json()
-    with db.cursor() as cursor:
-        cursor.execute(f"SELECT * FROM {table_name} WHERE id = '{file_id}'")
-        data = cursor.fetchall()
-        for _id, object_key, object_type, last_modified, object_size in data:
-            last_modified = last_modified.strftime("%Y-%m-%dT%H:%M:%SZ")
-            assert _id == response_data["id"]
-            assert last_modified == response_data["last_modified"]
-            assert object_key == response_data["object_key"]
-            assert object_type == response_data["object_type"]
-            assert object_size == response_data["object_size"]
+    table_data = dynamodb_table_data(dynamodb_client, dynamodb_resource)
+    for item in table_data["Items"]:
+        if item["id"] != file_id:
+            continue
+        else:
+            check.equal(item["id"], file_id)
+            check.equal(int(item["last_modified"]), response_data["last_modified"])
+            check.equal(item["object_key"], response_data["object_key"])
+            check.equal(item["object_type"], response_data["object_type"])
+            check.equal(item["object_size"], response_data["object_size"])
+            break
 
 
-def test_cxqa_rds_05_removed_metadata(upload_file, db, _base_url, base_headers):
-    file_id, uploaded_date = upload_file
-    table_name = get_table_name(db)
-    with db.cursor() as cursor:
-        cursor.execute(f"SELECT * FROM {table_name} WHERE id = '{file_id}'")
-        data = cursor.fetchall()
-        assert len(data) == 1
-        for _id, object_key, _, _, _ in data:
-            assert _id
-            assert "test.jpg" in object_key
-
-    response = requests.get(_base_url, headers=base_headers)
-    _id = response.json()[0]["id"]
-    url = _base_url + "/" + str(_id)
+def test_cxqa_rds_05_removed_metadata(
+    upload_file, dynamodb_client, dynamodb_resource, _base_url, base_headers
+):
+    file_id, uploaded_date, file_name, file_size = upload_file
+    table_data = dynamodb_table_data(dynamodb_client, dynamodb_resource)
+    assert any(item["id"] == file_id for item in table_data["Items"])
+    url = _base_url + "/" + str(file_id)
     response = requests.delete(url, headers=base_headers)
     assert response.status_code == 200
     assert response.text.strip() == '"Image is deleted"'
-    with db.cursor() as cursor:
-        cursor.execute(f"SELECT * FROM {table_name} WHERE id = '{file_id}'")
-        data = cursor.fetchall()
-        assert len(data) == 0, "item is not deleted"
-
-
-def test_cxqa_rds_05_removed_metadata(upload_file, db, _base_url, base_headers):
-    file_id, uploaded_date = upload_file
-    table_name = get_table_name(db)
-
-    with db.cursor() as cursor:
-        cursor.execute(f"SELECT * FROM {table_name} WHERE id = '{file_id}'")
-        data = cursor.fetchall()
-        assert len(data) == 1
-        for _id, object_key, _, _, _ in data:
-            assert _id
-            assert "test.jpg" in object_key
-    url = _base_url + "/" + str(_id)
-    response = requests.delete(url, headers=base_headers)
-    assert response.status_code == 200
-    assert response.text.strip() == '"Image is deleted"'
+    table_data = dynamodb_table_data(dynamodb_client, dynamodb_resource)
+    assert not any(
+        item["id"] == file_id for item in table_data["Items"]
+    ), "item is not deleted"

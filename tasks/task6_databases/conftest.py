@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from datetime import datetime
 
 import boto3
@@ -28,6 +29,31 @@ def aws_session():
         region_name=region,
     )
     return session
+
+
+@pytest.fixture(scope="module")
+def dynamodb_client(aws_session):
+    return aws_session.client("dynamodb")
+
+
+@pytest.fixture(scope="module")
+def dynamodb_resource(aws_session):
+    return boto3.resource("dynamodb", region_name=aws_session.region_name)
+
+
+def get_dynamodb_table_name(dynamodb_client):
+    response = dynamodb_client.list_tables()
+    table_names = response.get("TableNames", [])
+    assert table_names
+    table_name = table_names[0]
+    return table_name
+
+
+def dynamodb_table_data(dynamodb_client, dynamodb_resource):
+    table_name = get_dynamodb_table_name(dynamodb_client)
+    table = dynamodb_resource.Table(table_name)
+    table_data = table.scan()
+    return table_data
 
 
 @pytest.fixture(scope="module")
@@ -235,13 +261,15 @@ def base_headers():
 @pytest.fixture()
 def upload_file(_base_url, base_headers):
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(script_dir, "resources", "test.jpg")
+    file_name = "test.jpg"
+    file_path = os.path.join(script_dir, "resources", file_name)
+    file_size = os.path.getsize(file_path)
     with open(file_path, "rb") as file:
         files = {"upfile": file}
         response = requests.post(_base_url, headers=base_headers, files=files)
         _id = response.json().get("id")
-        uploaded_date = datetime.now(pytz.utc).strftime("%Y-%m-%d %H:%M")
-    return _id, uploaded_date
+        uploaded_date = int(time.time()) + 1
+    return _id, uploaded_date, file_name, file_size
 
 
 def get_table_name(db):
